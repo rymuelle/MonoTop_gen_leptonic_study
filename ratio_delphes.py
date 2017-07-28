@@ -11,7 +11,6 @@ test = f_RH_1.Get("Delphes")
 
 c1 = TCanvas()
 
-TH1F_ratio = TH1F("TH1F_ratio", "TH1F_ratio", 10, 0, 1)
 
 def getMuons(tree):
 	nMuons = tree.GetLeaf('Muon_size').GetValue()
@@ -54,40 +53,44 @@ def getJets(tree):
 			Jets.append(cand)
 	return Jets
 
-for count in range(test.GetEntries()):
-	muon_pt = 0
-	electron_pt = 0
-	jet_pt = 0
+def returnHistogram(test, name):
+	TH1F_ratio = TH1F("TH1F_ratio_{}".format(name), "TH1F_ratio_{}".format(name), 10, 0, 1)
 
-	test.GetEntry(count)
-	jets = getJets(test)
-	muons = getMuons(test)
-	electrons = getElectrons(test)
-
-	for jet in jets:
-		if jet['btag'] == 1:
-			#print count, jet['pt'], jet['btag']
-			jet_pt = jet['pt']
+	for count in range(test.GetEntries()):
+		muon_pt = 0
+		electron_pt = 0
+		jet_pt = 0
+	
+		test.GetEntry(count)
+		jets = getJets(test)
+		muons = getMuons(test)
+		electrons = getElectrons(test)
+	
+		for jet in jets:
+			if jet['btag'] == 1:
+				#print count, jet['pt'], jet['btag']
+				jet_pt = jet['pt']
+				break
+	
+		for muon in muons:
+			#print count, muon['pt']
+			muon_pt = muon['pt']
 			break
+	
+		for electron in electrons:
+			#print count, electron['pt']
+			electron_pt = electron['pt']
+			break
+	
+		if muon_pt*jet_pt > 0:
+			print jet_pt/(jet_pt+muon_pt)
+			TH1F_ratio.Fill(jet_pt/(jet_pt+muon_pt))
+		elif electron_pt*jet_pt > 0:
+			print jet_pt/(jet_pt+electron_pt)
+			TH1F_ratio.Fill(jet_pt/(jet_pt+electron_pt))
+	return TH1F_ratio
 
-	for muon in muons:
-		#print count, muon['pt']
-		muon_pt = muon['pt']
-		break
 
-	for electron in electrons:
-		#print count, electron['pt']
-		electron_pt = electron['pt']
-		break
-
-	if muon_pt*jet_pt > 0:
-		print jet_pt/(jet_pt+muon_pt)
-		TH1F_ratio.Fill(jet_pt/(jet_pt+muon_pt))
-	elif electron_pt*jet_pt > 0:
-		print jet_pt/(jet_pt+electron_pt)
-		TH1F_ratio.Fill(jet_pt/(jet_pt+electron_pt))
-
-TH1F_ratio.Draw()
-c1.SaveAs("TH1F_ratio.png")
-
-		
+one_tev = returnHistogram(test, "1TeV")
+one_tev.Draw()
+c1.SaveAs("one_tev.png")
